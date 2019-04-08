@@ -14,6 +14,7 @@ from random import randint
 from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
+import pdb
 
 __version__                = "1.602"
 ROLLING_PLOT_PERIOD        = 12
@@ -52,7 +53,25 @@ class Analizer:
         then this date is assigned a 0.0 return.
         """
         
-        if column_type == 'price':    
+        if column_type == 'price':
+            # all_series2 = []
+            # for i in range(0, len(df.columns)):
+            #     series = pd.Series(df.ix[:,i])
+            #     returns = series #.pct_change(fill_method='pad')
+            #     all_series2.append(returns)        
+            # self.modif_df = pd.concat(all_series2, axis=1)
+            # self.modif_df.columns = range(0, len(self.modif_df.columns))
+            # #self.modif_df =(1+self.modif_df).cumprod() 
+            # self.modif_df = self.modif_df.resample('D').apply(lastValue)
+            # # self.modif_df = self.modif_df.pct_change(fill_method='pad').dropna()
+            # new_index = pd.bdate_range(self.modif_df.index[0], self.modif_df.index[-1])
+            # self.modif_df = self.modif_df.reindex(new_index, fill_value=0.0)
+            self.original_df = df
+            # self.original_df = self.original_df.resample('D').pad()
+
+            # self.original_df = self.original_df.resample('D').apply(lastValue)
+            # self.original_df = self.original_df.dropna()
+            
             all_series = []
             df = pd.DataFrame(df)
             for i in range(0, len(df.columns)):
@@ -1095,12 +1114,19 @@ class Analizer:
               
         max_drawdown_start, max_drawdown_end  = self.get_max_dd_dates()
 
-        underWaterSeries = self.get_underwater_data()
+        underWaterSeries = self.get_underwater_data(input_df=self.original_df, external_df=False)
+        extra_df = self.original_df
+        extra_df = extra_df.resample('D').pad()
+        extra_df['underwater'] =  underWaterSeries
+        extra_df['underwater'] = extra_df['underwater'].fillna(0)
+        underWaterSeries = extra_df['underwater']
+        # pdb.set_trace()
+        # underWaterSeries = self.get_underwater_data()
         
         fig = plt.figure(figsize=(8,10))
               
-        ax1 = plt.subplot2grid((8, 1), (0, 0), rowspan=4)
-        ax2 = plt.subplot2grid((8, 1), (4, 0), rowspan=2)
+        ax1 = plt.subplot2grid((8, 1), (0, 0), rowspan=6)
+        # ax2 = plt.subplot2grid((8, 1), (4, 0), rowspan=2)
         ax3 = plt.subplot2grid((8, 1), (6, 0), rowspan=2)
         
         for column in balance.columns:
@@ -1111,7 +1137,7 @@ class Analizer:
             axis.set_major_formatter(ScalarFormatter())    
             
         ax1.xaxis.set_ticklabels([])
-        ax2.xaxis.set_ticklabels([])
+        # ax2.xaxis.set_ticklabels([])
                  
         color_cycle = ax1._get_lines.prop_cycler
         colors = []
@@ -1123,22 +1149,29 @@ class Analizer:
                 break
                 
         ax1.set_prop_cycle(None)    
-        
-        for i, column in enumerate(balance.columns):  
-            if self.use_titles:                
-                ax1.plot(balance.index.to_pydatetime(), balance[column], label=self.data.columns[i])   
-            else:
-                ax1.plot(balance.index.to_pydatetime(), balance[column])       
+
+        # pdb.set_trace()
+
+        # for i, column in enumerate(self.modif_df.columns):
+        #     ax1.plot(self.modif_df.index.to_pydatetime(), self.modif_df[column])       
+        #     # ax1.plot(self.modif_df.index.to_pydatetime(), self.modif_df['rolling'])
+        ax1.plot(self.original_df.index.to_pydatetime(), self.original_df['rolling'])
+
+        # for i, column in enumerate(balance.columns):  
+        #     if self.use_titles:                
+        #         ax1.plot(balance.index.to_pydatetime(), balance[column], label=self.data.columns[i])   
+        #     else:
+        #         ax1.plot(balance.index.to_pydatetime(), balance[column])       
                
-        ax2.plot(weeklyReturns.index.to_pydatetime(), weeklyReturns)
+        # ax2.plot(weeklyReturns.index.to_pydatetime(), weeklyReturns)
         ax3.plot(underWaterSeries.index.to_pydatetime(), underWaterSeries)
         
         if self.use_titles:
             ax1.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol= 3, fancybox=True, shadow=True)
         
         ax3.set_xlabel('Time')
-        ax1.set_ylabel('Cumulative return')
-        ax2.set_ylabel('Week return')
+        ax1.set_ylabel('Equity curve')
+        # ax2.set_ylabel('Week return')
         ax3.set_ylabel('Drawdown')
                     
         if plot_drawdown_lines:
@@ -1149,18 +1182,18 @@ class Analizer:
         if vertical_line != "":
             vertical_line_date = datetime.datetime.strptime(vertical_line, '%Y-%m-%d')
             ax1.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)      
-            ax2.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)  
+            # ax2.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)  
             ax3.axvline(vertical_line_date, linestyle='dashed', color="red", linewidth=2)  
         
         ax1.axhline(1.0, linestyle='dashed', color='black', linewidth=1.5)
-        ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
+        # ax2.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
         ax3.axhline(0.0, linestyle='dashed', color='black', linewidth=1.5)
               
         ax1.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
         ax1.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
  
-        ax2.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
-        ax2.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+        # ax2.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
+        # ax2.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
 
         ax3.yaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
         ax3.xaxis.grid(b=True, which='major', color='grey', linewidth=0.5, linestyle='dashed')
