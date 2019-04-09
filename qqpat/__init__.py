@@ -66,7 +66,15 @@ class Analizer:
             # # self.modif_df = self.modif_df.pct_change(fill_method='pad').dropna()
             # new_index = pd.bdate_range(self.modif_df.index[0], self.modif_df.index[-1])
             # self.modif_df = self.modif_df.reindex(new_index, fill_value=0.0)
-            self.original_df = df
+            # self.original_df = df
+            
+            original_all_series = []
+            odf = pd.DataFrame(df)
+            for i in range(0, len(odf.columns)):
+                series = pd.Series(odf.ix[:,i])
+                original_all_series.append(series)
+            self.original_df = pd.concat(original_all_series, axis=1)
+
             # self.original_df = self.original_df.resample('D').pad()
 
             # self.original_df = self.original_df.resample('D').apply(lastValue)
@@ -175,7 +183,7 @@ class Analizer:
             statistics['tail_ratio']                = all_tail_ratio[i]
             statistics['kurtosis']                  = all_kurtosis[i]
             statistics['skewness']                  = all_skewness[i]
-            statistics['pdi']                       = all_pdi[i]
+            statistics['pdi']                       = all_pdi[i]  
             all_statistics.append(statistics)
         
         if external_df == False:    
@@ -1115,11 +1123,32 @@ class Analizer:
         max_drawdown_start, max_drawdown_end  = self.get_max_dd_dates()
 
         underWaterSeries = self.get_underwater_data(input_df=self.original_df, external_df=False)
+        # extra_df = self.original_df
+        # extra_df = extra_df.resample('D').pad()
+        # extra_df['underwater'] =  underWaterSeries
+        # extra_df['underwater'] = extra_df['underwater'].fillna(0)
+        # underWaterSeries = extra_df['underwater']
+
+
+        new_uw = pd.DataFrame()
         extra_df = self.original_df
         extra_df = extra_df.resample('D').pad()
-        extra_df['underwater'] =  underWaterSeries
-        extra_df['underwater'] = extra_df['underwater'].fillna(0)
-        underWaterSeries = extra_df['underwater']
+        for i, column in enumerate(underWaterSeries.columns):
+                    new_name = 'UW_' + column
+                    extra_df[new_name] = underWaterSeries[column]
+                    new_uw[new_name] = extra_df[new_name]
+                    new_uw[new_name] = new_uw[new_name].fillna(0)
+                    
+                    
+                    # pdb.set_trace()
+                    # #col_name = ?
+                    # current_series = pd.Series(underWaterSeries.ix[:,i])
+
+            
+            # if self.use_titles:                
+            #     ax1.plot(self.original_df.index.to_pydatetime(), self.original_df[column], label=self.data.columns[i])   
+
+        
         # pdb.set_trace()
         # underWaterSeries = self.get_underwater_data()
         
@@ -1150,12 +1179,12 @@ class Analizer:
                 
         ax1.set_prop_cycle(None)    
 
-        # pdb.set_trace()
-
-        # for i, column in enumerate(self.modif_df.columns):
-        #     ax1.plot(self.modif_df.index.to_pydatetime(), self.modif_df[column])       
-        #     # ax1.plot(self.modif_df.index.to_pydatetime(), self.modif_df['rolling'])
-        ax1.plot(self.original_df.index.to_pydatetime(), self.original_df['rolling'])
+        # ax1.plot(self.original_df.index.to_pydatetime(), self.original_df['rolling'])
+        for i, column in enumerate(self.original_df.columns):  
+            if self.use_titles:                
+                ax1.plot(self.original_df.index.to_pydatetime(), self.original_df[column], label=self.data.columns[i])   
+            else:
+                ax1.plot(self.original_df.index.to_pydatetime(), self.original_df[column])       
 
         # for i, column in enumerate(balance.columns):  
         #     if self.use_titles:                
