@@ -15,8 +15,9 @@ from sklearn import covariance
 from scipy.stats import kurtosis
 from scipy.stats import skew
 import pdb
+import warnings
 
-__version__                = "1.602"
+__version__                = "1.603"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -1869,7 +1870,7 @@ class Analizer:
             
         difference  = balance.index[-1] - balance.index[0]
         difference_in_years = (difference.days + difference.seconds/86400)/365.2425
-        cagr = ((balance[-1:].values/balance[:1].values)**(1/difference_in_years))-1
+        cagr = (((balance[-1:].where(balance > 0, 0).values)/balance[:1].values)**(1/difference_in_years))-1
         if external_df == False:   
             self.statistics['cagr'] = cagr[0] 
         return cagr[0]
@@ -2110,8 +2111,11 @@ class Analizer:
         all_tail_ratio = []
 
         for c in data.columns:
-            k = np.abs(np.percentile(data[c], 95)/np.percentile(data[c], 5))
-            all_tail_ratio.append(k)
+            try:
+                k = np.abs(np.percentile(data[c], 95)/np.percentile(data[c], 5))
+                all_tail_ratio.append(k)
+            except RuntimeWarning:
+                all_tail_ratio.append(0)
       
         if external_df == False:
             self.statistics['tail_ratio'] = all_tail_ratio     
