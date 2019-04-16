@@ -1964,7 +1964,7 @@ class Analizer:
         else:
             balance = (1+input_df).cumprod()
         
-        balance = np.log(balance)
+        balance = np.log(balance.where(balance > 0, 0))
         all_r_values = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
