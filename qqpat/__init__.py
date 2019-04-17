@@ -17,7 +17,7 @@ from scipy.stats import skew
 import pdb
 import warnings
 
-__version__                = "1.603"
+__version__                = "1.604"
 ROLLING_PLOT_PERIOD        = 12
 
 SAMPLE_COVARIANCE          = 0
@@ -1964,7 +1964,7 @@ class Analizer:
         else:
             balance = (1+input_df).cumprod()
         
-        balance = np.log(balance.where(balance > 0, 0))
+        # balance = np.log(balance.where(balance > 0, 0))
         all_r_values = []
         for i in range(0, len(balance.columns)):
             series = pd.Series(balance.iloc[:,i])
