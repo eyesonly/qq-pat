@@ -216,7 +216,11 @@ class Analizer:
             p_positive = p[len(data_omega_negative):]
             positive_integral = np.trapz((1-p_positive), x=data_omega_positive)
             negative_integral = np.trapz(p_negative, x=data_omega_negative)
-            omega_ratio = positive_integral/negative_integral
+            try:
+                omega_ratio = positive_integral/negative_integral
+            except RuntimeWarning:
+                omega_ratio = 0
+
             all_omega_ratio.append(omega_ratio)
         
         if external_df == False:    
@@ -314,8 +318,11 @@ class Analizer:
             
         all_win_ratio = []        
         for i in range(0, len(data.columns)):                       
-            df = pd.Series(data.iloc[:,i]).dropna()     
-            win_ratio = float(len(df[df > 0]))/float(len(df[df!=0]))
+            df = pd.Series(data.iloc[:,i]).dropna()
+            if float(len(df[df!=0])) == 0:
+                win_ratio = float(len(df[df > 0]))/0.1 #jjg, assumption
+            else:
+                win_ratio = float(len(df[df > 0]))/float(len(df[df!=0]))
             all_win_ratio.append(win_ratio)
         if external_df == False:    
             self.statistics['win ratio'] = all_win_ratio   
@@ -1577,7 +1584,7 @@ class Analizer:
         """
         Returns the sortino ratio for all input time series.
         """
-    
+
         if 'sortino ratio' in self.statistics and external_df == False:
             return self.statistics['sortino ratio']
             
@@ -1588,8 +1595,8 @@ class Analizer:
         
         downside_risk = self.get_downside_risk(base_return, input_df, external_df)
         
-        if external_df == False:
-            self.statistics['sortino ratio'] = sqrt(252)*(data.mean()/downside_risk.std()).values
+        # if external_df == False:
+        self.statistics['sortino ratio'] = sqrt(252)*(data.mean()/downside_risk.std()).values
         return self.statistics['sortino ratio']
         
     def get_max_dd_dates(self, input_df = None, external_df = False):
